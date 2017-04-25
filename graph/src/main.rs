@@ -120,9 +120,7 @@ fn graph_builder(lines: String) -> Adjlist{
             None =>{}
         }
         while let Some(next) = iter.next(){
-            let tmp = next.clone().to_string();
-            graph.add_edge(head, next.to_string());
-            head = tmp
+            graph.add_edge(head.clone(), next.to_string());
         }
      }
     graph
