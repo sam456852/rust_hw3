@@ -1,9 +1,9 @@
 /**!
- *ASSUMPTIONS
+ * ASSUMPTIONS
  *
  *- The edges in graph are undirected.
  *- Based on DFS, the result path may not be the shortest.
- *- Enter "exit" can break and stop the programme.
+ *- Enter "exit" or just press enter button can break and stop the programme.
  *
  */
 
@@ -13,12 +13,13 @@ use graph::adjlist::*;
 use std::env;
 use std::fs::File;
 use std::io::{Read,stdin};
+use std::collections::HashSet;
 
 fn main() {
     //initialize graph
     let graph = graph_builder(readin_file());
     // print the adjacent list for the graph
-    //println!("{:?}", graph);
+    // println!("{:?}", graph);
     input_node(&graph);
 }
 
@@ -27,7 +28,7 @@ fn find_path(graph: &Adjlist, start: String, end: String) -> Vec<String>{
     let mut path=Vec::new();
     path.push(start.clone());
     dfs(graph, start, end.clone(), &mut path);
-    if path.len()==graph.adj_list.len() && path[path.len()-1]!=end.clone(){
+    if path.len()==graph.node_num() && path[path.len()-1]!=end.clone(){
         return Vec::new();
     }
     else if path[path.len()-1] != end.clone() {
@@ -65,26 +66,29 @@ mod find_path_tests {
 
 // the dfs helper function for find_path
 fn dfs(graph: &Adjlist, start: String, end: String, path: &mut Vec<String>){
-    if start.to_owned()==end.to_owned(){
+    if start==end{
         return;
     }
-    if path.len()==graph.adj_list.len(){
+    if path.len()==graph.node_num(){
         return;
     }
 
-    let mut vec = Vec::new();
-    match graph.adj_list.get(&start){
+    let mut vec = HashSet::new();
+    match graph.get_neighbors(&start){
         Some(v) => vec = v.clone(),
         None => println!("No such start node")
     }
-    for i in 0..vec.len(){
+    for i in vec.iter(){
         // if path.contains(&i)==false && ()
-        if path.contains(&vec[i].clone())==false{
-            path.push(vec[i].clone());
-            if vec[i]==end.to_owned(){
-                return;
-            }
-            dfs(graph, vec[i].clone(), end.to_owned(), path);
+        if path.contains(&i.to_owned())==false{
+            path.push(i.clone());
+            // if vec[i]==end.to_owned(){
+            //     return;
+            // }
+            dfs(graph, i.clone(), end.to_owned(), path);
+        }
+        if path[path.len()-1]==end.clone(){
+            return;
         }
     }
 }
@@ -135,14 +139,15 @@ mod graph_builder_tests {
         let mut test = HashMap::new();
         test.insert("b".to_string(), vec!["a".to_string(), "d".to_string()]);
         test.insert("a".to_string(), vec!["b".to_string(), "d".to_string()]);
-        test.insert("d".to_string(), vec!["b".to_string(), "a".to_string(), "c".to_string()]);
+        test.insert("d".to_string(), vec!["a".to_string(), "b".to_string(), "c".to_string()]);
         test.insert("c".to_string(), vec!["d".to_string()]);
-        assert_eq!(test, graph_builder("a b d\nb a d\nc\nd c\n".to_string()).adj_list);
-    }
-    #[test]
-    fn graph_builder_none_input_test() {
-        let test = HashMap::new();
-        assert_eq!(test, graph_builder(" ".to_string()).adj_list);
+        // assert_eq!(test, graph_builder("a b d\nb a d\nc\nd c\n".to_string()).adj_list);
+        assert_eq!(test.len(),graph_builder("a b d\nb a d\nc\nd c\n".to_string()).node_num());
+        assert_eq!(test.get(&String::from("a")),graph_builder("a b d\nb a d\nc\nd c\n".to_string()).get_neighbors(&String::from("a")));
+        assert_eq!(test.get(&String::from("b")),graph_builder("a b d\nb a d\nc\nd c\n".to_string()).get_neighbors(&String::from("b")));
+        assert_eq!(test.get(&String::from("c")),graph_builder("a b d\nb a d\nc\nd c\n".to_string()).get_neighbors(&String::from("c")));
+        assert_eq!(test.get(&String::from("d")),graph_builder("a b d\nb a d\nc\nd c\n".to_string()).get_neighbors(&String::from("d")));
+
     }
 
 }
@@ -155,9 +160,13 @@ fn input_node(graph: &Adjlist){
         for word in input.split_whitespace(){
             vec.push(word);
         }
+        if vec.len()==0{
+            break;
+        }
         if vec[0].to_owned().to_lowercase() == "exit"{
             break;
-        }else{
+        }
+        else{
             if vec.len() != 2{
                 println!("Please Input two Nodes");
             }else{
